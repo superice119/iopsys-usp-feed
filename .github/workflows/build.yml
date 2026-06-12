@@ -75,7 +75,8 @@ jobs:
           # Assert the packages that actually matter are present by NAME — a
           # silently-dropped obuspa (unresolved dep) is the failure mode to catch.
           for p in obuspa dm-service libbbfdm-api libbbfdm-ubus bbfdmd libeasy; do
-            if ls out/ | grep -q "^${p}_"; then
+            # match e.g. libbbfdm-api1.0_... (ABI_VERSION suffix) as well as name_...
+            if ls out/ | grep -qE "^${p}([_0-9])"; then
               echo "[OK] ${p} built"
             else
               echo "[WARN] ${p} MISSING from output"

@@ -23,6 +23,10 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
 
+# bbfdm.mk's install macros (BBFDM_REGISTER_SERVICES / BBFDM_INSTALL_MS_DM) shell
+# out to `jq` during install; provide it on the host PATH. See jqhost/Makefile.
+PKG_BUILD_DEPENDS:=jqhost/host
+
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_OBUSPA_VENDOR_PREFIX \
 	CONFIG_BBF_VENDOR_PREFIX \

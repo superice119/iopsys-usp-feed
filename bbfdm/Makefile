@@ -19,6 +19,10 @@ endif
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
 
+# tools/bbfdm.sh shells out to `jq` during dm-service install; provide it on the
+# host PATH (the SDK container has none). See jqhost/Makefile.
+PKG_BUILD_DEPENDS:=jqhost/host
+
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_BBFDM_DM_SERVICE_RAM_OPTIMIZED \
 	CONFIG_BBF_VENDOR_PREFIX \
