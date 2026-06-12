@@ -1,0 +1,18 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+fix_stomp_section() {
+	local encryption
+
+	config_get_bool encryption "${1}" encryption ""
+	if [ -n "${encryption}" ]; then
+		uci_set obuspa "${1}" encryption ""
+		uci_set obuspa "${1}" EnableEncryption "$encryption"
+	fi
+}
+
+# fix the stomp encryption parameter
+config_load obuspa
+config_foreach fix_stomp_section stomp
+uci_commit

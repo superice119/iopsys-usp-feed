@@ -1,0 +1,6 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /etc/obuspa/usp_utils.sh
+
+configure_ctrust_role

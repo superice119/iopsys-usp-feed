@@ -1,0 +1,21 @@
+Index: obuspa-11.0.3.1/src/core/database.c
+===================================================================
+--- obuspa-11.0.3.1.orig/src/core/database.c
++++ obuspa-11.0.3.1/src/core/database.c
+@@ -1002,6 +1002,16 @@ exit:
+         return err;
+     }
+ 
++    // Execute the PRAGMA statement
++    char *err_msg = NULL;
++    const char *sql = "PRAGMA journal_mode = MEMORY;";
++    err = sqlite3_exec(db_handle, sql, 0, 0, &err_msg);
++    if (err != SQLITE_OK) {
++        USP_LOG_Error("%s: Set failed journal_mode=MEMORY, err [%s]", __func__, err_msg);
++        sqlite3_free(err_msg);
++        return USP_ERR_INTERNAL_ERROR;
++    }
++
+     // Exit if unable to create the data model parameter table (if it does not already exist)
+     #define CREATE_TABLE_STR "create table if not exists data_model (hash integer, instances text, value text, primary key (hash, instances));"
+     err = sqlite3_exec(db_handle, CREATE_TABLE_STR, NULL, NULL, NULL);

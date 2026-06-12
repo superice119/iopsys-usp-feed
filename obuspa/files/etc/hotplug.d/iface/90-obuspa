@@ -1,0 +1,13 @@
+#!/bin/sh
+
+log() {
+    logger -t obuspa.hotplug "$*"
+}
+
+[ "$ACTION" = ifup -o "$ACTION" = ifupdate ] || exit 0
+[ "$ACTION" = ifupdate -a -z "$IFUPDATE_ADDRESSES" -a -z "$IFUPDATE_DATA" ] && exit 0
+
+/etc/init.d/obuspa enabled || exit 0
+
+log "Force re-connect non-local MQTT links, due to [$ACTION] of $INTERFACE ($DEVICE)"
+obuspa -c operate "Device.MQTT.Client.[BrokerAddress!=127.0.0.1].ForceReconnect()"

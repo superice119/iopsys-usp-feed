@@ -1,0 +1,50 @@
+Index: obuspa-11.0.3/src/core/cli_server.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/cli_server.c
++++ obuspa-11.0.3/src/core/cli_server.c
+@@ -726,10 +726,6 @@ int ExecuteCli_Get(str_vector_t *args)
+             USP_ASSERT(gge->value != NULL);
+             SendCliResponse("%s => %s\n", gge->path, gge->value);
+         }
+-        else
+-        {
+-            SendCliResponse("ERROR: %d retrieving %s (%s)\n", gge->err_code, gge->path, gge->err_msg);
+-        }
+     }
+ 
+     GROUP_GET_VECTOR_Destroy(&ggv);
+Index: obuspa-11.0.3/src/core/data_model.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/data_model.c
++++ obuspa-11.0.3/src/core/data_model.c
+@@ -1410,7 +1410,7 @@ int DATA_MODEL_NotifyInstanceAdded(char *path)
+     // Exit if instance already exists - nothing to do
+     if (exists)
+     {
+-        USP_ERR_SetMessage("%s: Object (%s) already exists in the data model", __FUNCTION__, path);
++        // USP_ERR_SetMessage("%s: Object (%s) already exists in the data model", __FUNCTION__, path);
+         return USP_ERR_CREATION_FAILURE;
+     }
+ 
+@@ -1498,7 +1498,7 @@ int DATA_MODEL_NotifyInstanceDeleted(char *path)
+     // Exit if instance does not exist - nothing to do
+     if (exists == false)
+     {
+-        USP_ERR_SetMessage("%s: Object (%s) does not exist in the data model", __FUNCTION__, path);
++        // USP_ERR_SetMessage("%s: Object (%s) does not exist in the data model", __FUNCTION__, path);
+         return USP_ERR_OBJECT_DOES_NOT_EXIST;
+     }
+ 
+Index: obuspa-11.0.3/src/core/mqtt.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/mqtt.c
++++ obuspa-11.0.3/src/core/mqtt.c
+@@ -4070,7 +4070,7 @@ void MessageV5Callback(struct mosquitto *mosq, void *userdata, const struct mosq
+     if (mosquitto_property_read_string(props, RESPONSE_TOPIC,
+             &response_info_ptr, false) == NULL)
+     {
+-        USP_LOG_Warning("%s: No response topic in received MESSAGE frame", __FUNCTION__);
++        USP_LOG_Info("%s: No response topic in received MESSAGE frame", __FUNCTION__);
+     }
+ 
+     // Send the message to the data model thread for further processing

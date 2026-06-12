@@ -1,0 +1,24 @@
+Index: obuspa-11.0.3/src/core/device_subscription.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/device_subscription.c
++++ obuspa-11.0.3/src/core/device_subscription.c
+@@ -410,6 +410,19 @@ void DEVICE_SUBSCRIPTION_Update(int id)
+         DeleteNonPersistentSubscriptions();
+     }
+ 
++    if (subscriptions.num_entries != 0) {
++        int i;
++        for (i=0; i < subscriptions.num_entries; i++)
++        {
++            if (subscriptions.vector[i].enable)
++            {
++                char *dm_path[] = { "Device." };
++                vendor_create_dm_cache(dm_path, 1);
++                break;
++            }
++        }
++    }
++
+     // Poll all value change subscriptions for change
+     ProcessAllValueChangeSubscriptions();
+ 

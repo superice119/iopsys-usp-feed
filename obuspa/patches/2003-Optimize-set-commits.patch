@@ -1,0 +1,26 @@
+Index: obuspa-11.0.3/src/core/handle_set.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/handle_set.c
++++ obuspa-11.0.3/src/core/handle_set.c
+@@ -94,6 +94,7 @@ void DestroySetExprInfo(set_expr_info_t *set_expr_info, int num_set_expr);
+ void PopulateSetResp_OperFailure(Usp__SetResp *set_resp, set_expr_info_t *si, group_set_vector_t *gsv);
+ void PopulateOperFailure_UpdatedInstFailure(Usp__SetResp__UpdatedObjectResult__OperationStatus__OperationFailure *oper_failure, set_expr_info_t *si, int obj_index, group_set_vector_t *gsv);
+ 
++extern int vendor_hold_commits(bool hold_commit);
+ /*********************************************************************//**
+ **
+ ** MSG_HANDLER_HandleSet
+@@ -421,11 +422,13 @@ Usp__Msg *ProcessSet_AllowPartialTrue(char *msg_id, set_expr_info_t *set_expr_in
+     resp = CreateSetResp(msg_id);
+     set_resp = resp->body->response->set_resp;
+ 
++    vendor_hold_commits(true);
+     // Iterate over all resolved expressions
+     for (i=0; i < num_set_expr; i++)
+     {
+         ProcessSet_AllowPartialTrue_Expression(msg_id, set_resp, &set_expr_info[i], gsv);
+     }
++    vendor_hold_commits(false);
+ 
+     return resp;
+ }

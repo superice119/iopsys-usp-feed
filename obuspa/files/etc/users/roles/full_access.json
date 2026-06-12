@@ -1,0 +1,14 @@
+{
+  "tr181": {
+    "name": "full_access",
+    "instance": 1,
+    "permission": [
+      {
+        "object": "Device.",
+        "perm": [
+          "PERMIT_ALL"
+        ]
+      }
+    ]
+  }
+}

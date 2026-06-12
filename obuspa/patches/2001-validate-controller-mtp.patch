@@ -1,0 +1,118 @@
+Index: obuspa-11.0.3/src/core/device.h
+===================================================================
+--- obuspa-11.0.3.orig/src/core/device.h
++++ obuspa-11.0.3/src/core/device.h
+@@ -371,6 +371,10 @@ void DEVICE_CONTROLLER_SetInheritedRole(int cont_instance, int role_instance);
+ int DEVICE_CONTROLLER_CountEnabledWebsockClientConnections(void);
+ #endif
+ 
++#ifdef OBUSPA_CONTROLLER_MTP_VERIFY
++bool DEVICE_CONTROLLER_IsMTPAllowed(char *endpoint_id, mtp_conn_t *mpc);
++#endif
++
+ #ifndef REMOVE_USP_BROKER
+ int DEVICE_SUBSCRIPTION_RouteNotification(Usp__Msg *usp, int instance, char *subscribed_path);
+ #ifdef FD_PASSING_EXPERIMENTAL
+Index: obuspa-11.0.3/src/core/device_controller.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/device_controller.c
++++ obuspa-11.0.3/src/core/device_controller.c
+@@ -978,6 +978,78 @@ int DEVICE_CONTROLLER_QueueBinaryMessage(mtp_send_item_t *msi, char *endpoint_id
+     return USP_ERR_OK;
+ }
+ 
++#ifdef OBUSPA_CONTROLLER_MTP_VERIFY
++/*********************************************************************//**
++**
++** DEVICE_CONTROLLER_IsMTPAllowed
++**
++** Determines whether an MTP is allowed to be used by the specified controller
++** This function is used by ValidateUspRecord() to determine whether to process a received USP message
++**
++** \param   endpoint_id - Endpoint ID of controller that sent a USP message
++** \param   mpc - pointer to structure specifying on which MTP the message was received
++**
++** \return  true if the MTP is allowed, false otherwise
++**
++**************************************************************************/
++bool DEVICE_CONTROLLER_IsMTPAllowed(char *endpoint_id, mtp_conn_t *mpc)
++{
++    controller_t *cont = FindEnabledControllerByEndpointId(endpoint_id);
++    controller_mtp_t *mtp;
++
++    // Disallow if no controller instance is found
++    if (cont == NULL)
++    {
++        return false;
++    }
++
++    mtp = FindFirstEnabledMtp(cont, mpc->protocol);
++
++#ifdef ENABLE_WEBSOCKETS
++    // Allow websocket server if no other MTP is configured
++    if ((mpc->protocol == kMtpProtocol_WebSockets) && (mpc->ws.serv_conn_id != INVALID))
++    {
++        return mtp == NULL;
++    }
++#endif
++
++    // Disallow if there is no MTP configured with matching protocol
++    if ((mtp == NULL) || (mtp->protocol != mpc->protocol))
++    {
++        return false;
++    }
++
++    // Check that the configured MTP matches the MTP on which the message was received
++    switch(mtp->protocol)
++    {
++#ifndef DISABLE_STOMP
++        case kMtpProtocol_STOMP:
++            return mtp->stomp_connection_instance == mpc->stomp.instance;
++#endif
++
++#ifdef ENABLE_COAP
++        case kMtpProtocol_CoAP:
++            return true;  // More detailed checks are not implemented for CoAP
++#endif
++
++#ifdef ENABLE_MQTT
++        case kMtpProtocol_MQTT:
++            return mtp->mqtt_connection_instance == mpc->mqtt.instance;
++#endif
++
++#ifdef ENABLE_WEBSOCKETS
++        case kMtpProtocol_WebSockets:
++            return (mpc->ws.client_cont_instance == cont->instance) && (mpc->ws.client_mtp_instance == mtp->instance);
++#endif
++        default:
++            TERMINATE_BAD_CASE(mtp->protocol);
++            break;
++    }
++
++    return false;
++}
++#endif
++
+ /*********************************************************************//**
+ **
+ ** DEVICE_CONTROLLER_IsMTPConfigured
+Index: obuspa-11.0.3/src/core/msg_handler.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/msg_handler.c
++++ obuspa-11.0.3/src/core/msg_handler.c
+@@ -1404,6 +1404,15 @@ int ValidateUspRecord(UspRecord__Record *rec, mtp_conn_t *mtpc)
+     usp_service_instance = USP_BROKER_GetUspServiceInstance(rec->from_id, 0);
+ #endif
+ 
++#ifdef OBUSPA_CONTROLLER_MTP_VERIFY
++    // Exit if the controller is not allowed to use the MTP on which the message was received
++    if (DEVICE_CONTROLLER_IsMTPAllowed(rec->from_id, mtpc) == false)
++    {
++        USP_ERR_SetMessage("%s: Ignoring message from endpoint_id=%s (unauthorized MTP)", __FUNCTION__, rec->from_id);
++        return USP_ERR_PERMISSION_DENIED;
++    }
++#endif
++
+     // Exit if the endpoint sending the message is unknown
+     cur_msg_controller_instance = DEVICE_CONTROLLER_FindInstanceByEndpointId(rec->from_id);
+     if ((cur_msg_controller_instance == INVALID) && (usp_service_instance == INVALID))

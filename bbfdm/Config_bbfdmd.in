@@ -1,0 +1,14 @@
+if PACKAGE_bbfdmd
+
+config BBF_VENDOR_PREFIX
+	string "Vendor Prefix"
+	default "X_IOWRT_EU_"
+
+config BBF_OBFUSCATION_KEY
+	string "Obfuscation key"
+	default "371d530c95a17d1ca223a29b7a6cdc97e1135c1e0959b51106cca91a0b148b5e42742d372a359760742803f2a44bd88fca67ccdcfaeed26d02ce3b6049cb1e04"
+
+config BBFDM_DM_SERVICE_RAM_OPTIMIZED
+	bool "Reduce memory utilization of dm-services"
+	default y
+endif

@@ -1,0 +1,13 @@
+Index: obuspa-11.0.3/src/core/data_model.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/data_model.c
++++ obuspa-11.0.3/src/core/data_model.c
+@@ -5611,7 +5611,7 @@ int RegisterDefaultControllerTrust(void)
+     int err = USP_ERR_OK;
+ 
+     // Register 'Full Access' role
+-    err |= USP_DM_RegisterRoleName(ROLE_FULL_ACCESS, "Full Access");
++    err |= USP_DM_RegisterRoleName(ROLE_FULL_ACCESS, "full_access");
+     err |= USP_DM_AddControllerTrustPermission(ROLE_FULL_ACCESS, dm_root, PERMIT_ALL);
+ 
+     // Register 'Untrusted' role

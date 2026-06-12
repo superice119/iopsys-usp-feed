@@ -1,0 +1,59 @@
+#!/bin/sh
+
+. /usr/share/libubox/jshn.sh
+. /lib/functions.sh
+
+get_oui_from_db() {
+	db -q get device.deviceinfo.ManufacturerOUI
+}
+
+get_serial_from_db() {
+	db -q get device.deviceinfo.SerialNumber
+}
+
+get_endpoint_id() {
+	AgentEndpointID="$(uci -q get obuspa.localagent.EndpointID)"
+	if [ -z "${AgentEndpointID}" ]; then
+		serial=$(get_serial_from_db)
+		oui=$(get_oui_from_db)
+		AgentEndpointID=$(echo "os::${oui}-${serial//+/%2B}")
+	fi
+
+	echo "${AgentEndpointID}"
+}
+
+get_device_role()
+{
+	local mode lan_proto
+
+	lan_proto="$(uci -q get network.lan.proto)"
+
+	if [ "${lan_proto}" == "dhcp" ]; then
+		mode="extender"
+	else
+		mode="gateway"
+	fi
+
+	echo "$mode"
+}
+
+add_mdns_advertise() {
+	mkdir -p /etc/umdns
+	usp_id="$(get_endpoint_id)"
+
+	json_init
+	json_add_object "usp_mdns"
+	json_add_string "service" "_usp-agt-mqtt._tcp.local"
+	json_add_int "port" 0
+	json_add_array "txt"
+	json_add_string "" "ID=$usp_id"
+	json_close_array
+	json_close_object
+
+	json_dump > /etc/umdns/obuspa_mdns.json
+}
+
+role="$(get_device_role)"
+if [ "${role}" == "gateway" ]; then
+	add_mdns_advertise
+fi

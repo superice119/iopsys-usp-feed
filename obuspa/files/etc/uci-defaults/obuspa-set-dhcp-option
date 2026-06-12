@@ -1,0 +1,87 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+get_access_role()
+{
+	local mode lan_proto
+
+	lan_proto="$(uci -q get network.lan.proto)"
+
+	if [ "${lan_proto}" == "dhcp" ]; then
+		mode="extender"
+	else
+		mode="full_access"
+	fi
+
+	echo "$mode"
+}
+
+configure_dhcp_options() {
+	local enabled inerface discovery
+
+	config_get_bool enabled global enabled 1
+	config_get interface global interface
+	config_get_bool discovery global dhcp_discovery 1
+
+	if [ -z "${interface}" ]; then
+		role="$(get_access_role)"
+
+		if [ "${role}" = "extender" ]; then
+			interface="lan"
+			uci -q set obuspa.global.interface="lan"
+		else
+			interface="wan"
+		fi
+	fi
+
+	reqopts="$(uci -q get network."${interface}".reqopts)"
+	proto="$(uci -q get network."${interface}".proto)"
+	local req125_present=0
+
+	for ropt in $reqopts; do
+		case $ropt in
+			125) req125_present=1 ;;
+			*) ;;
+		esac
+	done
+
+	sendopts="$(uci -q get network."${interface}".sendopts)"
+	send124_present=0
+	ent_data_present=0
+	BBF_ENT_DATA="00:00:0D:E9:04:03:75:73:70"
+	newsendopts=""
+	for sopt in $sendopts; do
+		if echo "${sopt}" | grep -q "^124:"; then
+			if echo "${sopt}" | grep -Fqw "${BBF_ENT_DATA}"; then
+				ent_data_present=1
+				break
+			else
+				newsendopts="${newsendopts} ${sopt}:${BBF_ENT_DATA}"
+				send124_present=1
+			fi
+		else
+			newsendopts="${newsendopts} ${sopt}"
+		fi
+	done
+
+	if [ "${send124_present}" -eq "0" ]; then
+		newsendopts="${newsendopts} 124:${BBF_ENT_DATA}"
+	fi
+
+	if [ "${proto}" = "dhcp" ]; then
+		if [ ${req125_present} -eq 0 ]; then
+			[ -n "${reqopts}" ] && newreqopts="$reqopts 125" || newreqopts="125"
+			uci -q set network."${interface}".reqopts="$newreqopts"
+		fi
+
+		if [ ${ent_data_present} -eq 0 ]; then
+			newsendopts="$(echo "${newsendopts}" | awk '{$1=$1};1')"
+			if [ -n "${newsendopts}" ]; then
+				uci -q set network."${interface}".sendopts="$newsendopts"
+			fi
+		fi
+	fi
+}
+
+configure_dhcp_options

@@ -1,0 +1,16 @@
+Index: obuspa-11.0.3/src/core/device_uds.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/device_uds.c
++++ obuspa-11.0.3/src/core/device_uds.c
+@@ -238,10 +238,7 @@ int DEVICE_UDS_Start(void)
+             USP_SNPRINTF(path, sizeof(path), "%s.%d", device_uds_conn_root, instance);
+             USP_LOG_Warning("%s: Deleting %s as it contained invalid parameters.", __FUNCTION__, path);
+             err = DATA_MODEL_DeleteInstance(path, 0);
+-            if (err != USP_ERR_OK)
+-            {
+-                goto exit;
+-            }
++            goto exit;
+         }
+     }
+ 

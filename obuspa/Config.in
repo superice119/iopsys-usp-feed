@@ -1,0 +1,77 @@
+if PACKAGE_obuspa
+config OBUSPA_MTP_ENABLE_MQTT
+	bool "Enable MQTT as mtp protocol"
+	default y
+
+config OBUSPA_MTP_ENABLE_WEBSOCKETS
+	bool "Enable WebSockets as mtp protocol"
+	default y
+
+config OBUSPA_MTP_ENABLE_STOMP
+	bool "Enable STOMP as mtp protocol"
+	default y
+
+config OBUSPA_MTP_ENABLE_COAP
+	bool "Enable CoAP as mtp protocol"
+	default y
+
+config OBUSPA_CONTROLLER_MTP_VERIFY
+	bool "Enable verification of controller MTP before processing the message"
+	default n
+
+config OBUSPA_LOCAL_MQTT_LISTENER
+	bool "Configures local mqtt broker for local usp connections"
+	default n
+
+config OBUSPA_MAX_CONTROLLERS_NUM
+	int "The maximum number of controllers to be supported"
+	range 1 10
+	default 5
+	help
+	 This value must be in range of 1 to 10. (default 5)
+
+config OBUSPA_DOWNLOAD_EXTENSION
+	bool "Adds Device.LocalAgent.X_IOPSYS_EU_Download()"
+	default y
+	help
+	 Adds Device.LocalAgent.X_IOPSYS_EU_Download() operate command
+	 for local file download to cpe
+
+config OBUSPA_UPLOAD_EXTENSION
+	bool "Adds Device.LocalAgent.X_IOPSYS_EU_Upload()"
+	default y
+	help
+	 Adds Device.LocalAgent.X_IOPSYS_EU_Upload() operate command
+	 for pull a file from cpe
+
+config OBUSPA_SESSION_EXTENSION
+	bool "Adds Device.LocalAgent.X_IOPSYS_EU_Session."
+	default y
+	help
+	 Adds Device.LocalAgent.X_IOPSYS_EU_Session. object to simulate
+	 a CWMP like session
+
+config OBUSPA_CWMP_DATAMODEL_SUPPORT
+	bool "Adds USPAgent, STOMP and MQTT dm from CWMP"
+	default y
+	help
+	 Expose Device.USPAgent., Device.STOMP., Device.MQTT.Client. objects over
+	 ubus to make it available to bbfdm for CWMP access
+
+config OBUSPA_VENDOR_PREFIX
+	string "Package specific datamodel Vendor Prefix for TR181 extensions"
+	default ""
+
+config OBUSPA_OVERRIDE_CT_ROLE
+	bool "Override ControllerTrust role with factory default roles"
+	default y
+
+config OBUSPA_VC_POLL_PERIOD
+	int "Polling interval in sec for ValueChange Subscriptions"
+	range 15 120
+	default "15"
+	help
+	 Obuspa relies on a polling mechanism to determine the ValueChange, Add, Del Subscriptions.
+	 Short poll period could give more responsive subscription events, but might delay overall experience in slower CPUs with good amount of subscriptions, on the other hand, a bigger value results into less responsive subscription handling. This value must be in range of 15 to 120 secs. (default 15)
+
+endif

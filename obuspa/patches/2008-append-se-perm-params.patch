@@ -1,0 +1,24 @@
+Index: obuspa-11.0.3.1/src/core/data_model.h
+===================================================================
+--- obuspa-11.0.3.1.orig/src/core/data_model.h
++++ obuspa-11.0.3.1/src/core/data_model.h
+@@ -422,6 +422,7 @@ int DM_PRIV_ReRegister_DBParam_Default(c
+ bool DM_PRIV_IsChildNodeOf(dm_node_t *node, dm_node_t *parent_node);
+ void DM_PRIV_GetAllEventsAndCommands(dm_node_t *node, str_vector_t *events, str_vector_t *commands);
+ 
++void VendorAppendSEParamsFromJsonFile(str_vector_t *sv);
+ int vendor_create_dm_cache(char *paths[], int num_paths);
+ #endif
+ 
+Index: obuspa-11.0.3.1/src/core/device_ctrust.c
+===================================================================
+--- obuspa-11.0.3.1.orig/src/core/device_ctrust.c
++++ obuspa-11.0.3.1/src/core/device_ctrust.c
+@@ -407,6 +407,7 @@ int DEVICE_CTRUST_Start(void)
+     // Initialise the list of parameters that are allowed to be used by search expression based permissions
+     // NOTE: This is done here, rather than in DEVICE_CTRUST_init() in order to prevent a false warning when running with -m option
+     TEXT_UTILS_SplitString(allowed_params_for_se_based_perms_str, &allowed_params_for_se_based_perms, ",");
++    VendorAppendSEParamsFromJsonFile(&allowed_params_for_se_based_perms);
+ 
+     // Exit if unable to get the object instance numbers present in the role table
+     INT_VECTOR_Init(&iv);

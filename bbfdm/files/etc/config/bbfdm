@@ -1,0 +1,12 @@
+config bbfdmd 'bbfdmd'
+	option enable '1'
+	option debug '0'
+	option loglevel '3'
+
+config micro_services 'micro_services'
+	option enable '1'
+	option enable_core '0'
+
+
+config reload_handler 'reload_handler'
+	option log_level '1'

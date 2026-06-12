@@ -1,0 +1,15 @@
+Index: obuspa-11.0.3/src/core/usp_err.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/usp_err.c
++++ obuspa-11.0.3/src/core/usp_err.c
+@@ -190,7 +190,9 @@ char *USP_ERR_ToString(int err, char *buf, int len)
+ {
+ #if HAVE_STRERROR_R && !STRERROR_R_CHAR_P
+     // XSI version of strerror_r
+-    strerror_r(err, buf, len);
++    if (strerror_r(err, buf, len) != 0) {
++        snprintf(buf, len, "Unknown error %d", err);
++    }
+     return buf;
+ #else
+     // GNU version of strerror_r

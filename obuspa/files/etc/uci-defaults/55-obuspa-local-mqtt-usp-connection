@@ -1,0 +1,21 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+if [ ! -f "/etc/config/mosquitto" ]; then
+	echo "Local mosquitto broker not available"
+	exit 0
+fi
+
+add_mqtt_obuspa_listener()
+{
+	uci_add mosquitto listener obuspa
+	uci_set mosquitto obuspa enabled 1
+	uci_set mosquitto obuspa port '1883'
+	uci_set mosquitto obuspa no_remote_access '1'
+	uci_set mosquitto obuspa allow_anonymous '1'
+}
+
+# Add mosquitto listener for obuspa connection
+# apps/controller should add controller definitions separately
+add_mqtt_obuspa_listener

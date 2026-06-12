@@ -1,0 +1,17 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /etc/obuspa/usp_utils.sh
+
+rfile="$(uci -q get obuspa.global.role_file)"
+db_file="$(uci -q get obuspa.global.db_file)"
+# Reset the role_file if present
+if [ -n "${rfile}" ]; then
+	uci -q set obuspa.global.role_file=""
+fi
+
+if [ ! -f "${db_file}" ]; then
+	configure_ctrust_role
+fi
+
+exit 0

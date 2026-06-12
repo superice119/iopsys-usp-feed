@@ -1,0 +1,12 @@
+#!/bin/sh
+
+uci -q batch <<-EOT
+        delete firewall.usp
+        set firewall.usp=include
+        set firewall.usp.path=/etc/firewall.usp
+        set firewall.usp.reload=1
+        commit firewall
+EOT
+
+exit 0
+

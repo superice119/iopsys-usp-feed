@@ -1,0 +1,28 @@
+{
+  "tr181": {
+    "name": "extender",
+    "instance": 3,
+    "permission": [
+      {
+        "object": "Device.",
+        "perm": [
+          "PERMIT_NONE"
+        ]
+      },
+      {
+        "object": "Device.SSH.",
+        "perm": [
+          "PERMIT_GET",
+          "PERMIT_GET_INST",
+          "PERMIT_OBJ_INFO",
+          "PERMIT_CMD_INFO",
+          "PERMIT_OPER",
+          "PERMIT_SUBS_VAL_CHANGE",
+          "PERMIT_SUBS_OBJ_ADD",
+          "PERMIT_SUBS_OBJ_DEL",
+          "PERMIT_SUBS_EVT_OPER_COMP"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,85 @@
+Index: obuspa-11.0.3/src/core/cli_server.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/cli_server.c
++++ obuspa-11.0.3/src/core/cli_server.c
+@@ -513,6 +513,7 @@ int CLI_SERVER_ExecuteCliCommand(char *cmd_line)
+         SendCliResponse("WARNING: Discarding unused args: %s\n", args.vector[cli_cmd->max_args+1]);
+     }
+ 
++    vendor_create_dm_cache(NULL, 0);
+     // Process command
+     err = cli_cmd->exec_cmd(&args);
+     print_help = false;
+@@ -672,6 +673,11 @@ int ExecuteCli_Version(str_vector_t *args)
+ int ExecuteCli_Get(str_vector_t *args)
+ {
+     combined_role_t *combined_role;
++
++    char *path[2] = {args->vector[1], 0};
++
++    vendor_create_dm_cache(path, 1);
++
+ #ifndef REMOVE_USP_BROKER
+     char *arg1;
+ 
+@@ -1484,6 +1490,9 @@ int ExecuteCli_GetInstances(str_vector_t *args)
+     USP_ASSERT(args->num_entries >= 2);
+     arg1 = args->vector[1];
+ 
++    char *path[2] = {args->vector[1], 0};
++
++    vendor_create_dm_cache(path, 1);
+     // Exit if unable to get a list of all parameters referenced by the expression
+     STR_VECTOR_Init(&obj_paths);
+     combined_role = CalcCliCombinedRole();
+Index: obuspa-11.0.3/src/core/data_model.h
+===================================================================
+--- obuspa-11.0.3.orig/src/core/data_model.h
++++ obuspa-11.0.3/src/core/data_model.h
+@@ -422,5 +422,6 @@ int DM_PRIV_ReRegister_DBParam_Default(char *path, char *value);
+ bool DM_PRIV_IsChildNodeOf(dm_node_t *node, dm_node_t *parent_node);
+ void DM_PRIV_GetAllEventsAndCommands(dm_node_t *node, str_vector_t *events, str_vector_t *commands);
+ 
++int vendor_create_dm_cache(char *paths[], int num_paths);
+ #endif
+ 
+Index: obuspa-11.0.3/src/core/handle_get.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/handle_get.c
++++ obuspa-11.0.3/src/core/handle_get.c
+@@ -129,6 +129,7 @@ void MSG_HANDLER_HandleGet(Usp__Msg *usp, char *controller_endpoint, mtp_conn_t
+         goto exit;
+     }
+ 
++    vendor_create_dm_cache(path_exprs, num_path_expr);
+     // Calculate the number of hierarchical levels to traverse in the data model when performing partial path resolution
+     // NOTE: protocol buffer has depth as an unsigned quantity, but internally we use a signed number, so limit range to that of a signed number
+     depth = usp->body->request->get->max_depth;
+Index: obuspa-11.0.3/src/core/handle_get_instances.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/handle_get_instances.c
++++ obuspa-11.0.3/src/core/handle_get_instances.c
+@@ -98,6 +98,10 @@ void MSG_HANDLER_HandleGetInstances(Usp__Msg *usp, char *controller_endpoint, mt
+ 
+     // Iterate over all Object paths in the request message
+     gi = usp->body->request->get_instances;
++
++    // Create a cache for vendor DMs
++    vendor_create_dm_cache(gi->obj_paths, gi->n_obj_paths);
++
+     for (i=0; i < gi->n_obj_paths; i++)
+     {
+         ProcessRequestedPathInstances(gi->obj_paths[i], gi->first_level_only, gi_resp);
+Index: obuspa-11.0.3/src/core/msg_handler.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/msg_handler.c
++++ obuspa-11.0.3/src/core/msg_handler.c
+@@ -1032,6 +1032,8 @@ int HandleUspMessage(Usp__Msg *usp, char *endpoint_id, mtp_conn_t *mtpc)
+                 MSG_HANDLER_UspMsgTypeToString(usp->header->msg_type),
+                 iso8601_cur_time(buf, sizeof(buf)) );
+ 
++    // Drop the cached data before processing next message
++    vendor_create_dm_cache(NULL, 0);
+     // Process the message
+     cur_msg_type = usp_msg_type;
+     switch(usp_msg_type)

@@ -1,0 +1,23 @@
+Index: obuspa-11.0.3.1/src/core/database.c
+===================================================================
+--- obuspa-11.0.3.1.orig/src/core/database.c
++++ obuspa-11.0.3.1/src/core/database.c
+@@ -1674,3 +1674,7 @@ int GetAllEntriesForParameter(db_hash_t
+     return result;
+ }
+ 
++void DATABASE_force_reset_file()
++{
++    schedule_factory_reset_init = true;
++}
+Index: obuspa-11.0.3.1/src/core/database.h
+===================================================================
+--- obuspa-11.0.3.1.orig/src/core/database.h
++++ obuspa-11.0.3.1/src/core/database.h
+@@ -67,5 +67,6 @@ void DATABASE_Dump(void);
+ int DATABASE_ReadDataModelInstanceNumbers(bool remove_unknown_params);
+ db_hash_t DATABASE_GetMigratedHash(db_hash_t hash);
+ 
++void DATABASE_force_reset_file();
+ #endif
+ 

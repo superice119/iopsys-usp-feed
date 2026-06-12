@@ -1,0 +1,34 @@
+Index: obuspa-11.0.3/src/core/device_controller.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/device_controller.c
++++ obuspa-11.0.3/src/core/device_controller.c
+@@ -4238,6 +4238,14 @@ int ProcessControllerAdded(int cont_instance)
+         goto exit;
+     }
+ 
++#if defined(E2ESESSION_EXPERIMENTAL_USP_V_1_2)
++    err = ProcessControllerE2ESessionAdded(cont);
++    if (err != USP_ERR_OK)
++    {
++        goto exit;
++    }
++#endif
++
+     // Exit if unable to get the object instance numbers present in this controller's MTP table
+     USP_SNPRINTF(path, sizeof(path), "%s.%d.MTP", device_cont_root, cont_instance);
+     err = DATA_MODEL_GetInstances(path, &iv);
+@@ -4279,14 +4287,6 @@ int ProcessControllerAdded(int cont_instance)
+     DEVICE_MQTT_UpdateControllerTopics();
+ #endif
+ 
+-#if defined(E2ESESSION_EXPERIMENTAL_USP_V_1_2)
+-    err = ProcessControllerE2ESessionAdded(cont);
+-    if (err != USP_ERR_OK)
+-    {
+-        goto exit;
+-    }
+-#endif
+-
+     // If the code gets here, then we successfully retrieved all data about the controller (even if some of the MTPs were not added)
+     err = USP_ERR_OK;
+ 

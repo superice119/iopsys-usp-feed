@@ -1,0 +1,29 @@
+{
+  "daemon": {
+    "enable": "1",
+    "service_name": "obuspa",
+    "proto": "cwmp",
+    "unified_daemon": false,
+    "services": [
+      {
+        "parent_dm": "Device.",
+        "object": "USPAgent"
+      },
+      {
+        "parent_dm": "Device.",
+        "object": "LocalAgent"
+      },
+      {
+        "parent_dm": "Device.",
+        "object": "MQTT"
+      },
+      {
+        "parent_dm": "Device.",
+        "object": "STOMP"
+      }
+    ],
+    "config": {
+      "loglevel": "3"
+    }
+  }
+}

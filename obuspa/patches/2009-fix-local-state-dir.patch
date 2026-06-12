@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ec5cfab..bfd8e71 100755
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -18,7 +18,7 @@ project(obuspa
+ 
+ include(GNUInstallDirs)
+ 
+-set(OBUSPA_LOCAL_STATE_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LOCALSTATEDIR}/obuspa)
++set(OBUSPA_LOCAL_STATE_DIR ${CMAKE_INSTALL_FULL_SYSCONFDIR}/obuspa)
+ message(STATUS "OBUSPA_LOCAL_STATE_DIR: ${OBUSPA_LOCAL_STATE_DIR}")
+ 
+ option(ENABLE_STOMP "enable STOMP MTP support" ON)

@@ -1,0 +1,66 @@
+{
+	"hosts_refresh": {
+		"if" : [
+			{
+				"event": "host"
+			}
+		],
+		"then" : [
+			{
+				"object": "bbfdm.hostmngr",
+				"method":"refresh_references_db",
+				"args" : {},
+				"timeout": 1
+			}
+		]
+	},
+	"dhcp_refresh": {
+		"if_operator": "OR",
+		"if" : [
+			{
+				"event": "host"
+			},
+			{
+				"event": "wifi.dataelements.Associated"
+			}
+		],
+		"then" : [
+			{
+				"object": "bbfdm.dhcpmngr",
+				"method":"refresh_references_db",
+				"args" : {},
+				"timeout": 1
+			}
+		]
+	},
+	"ieee1905_refresh_add": {
+		"if" : [
+			{
+				"event": "ieee1905.neighbor.add"
+			}
+		],
+		"then" : [
+			{
+				"object": "bbfdm.ieee1905",
+				"method":"refresh_references_db",
+				"args" : {},
+				"timeout": 1
+			}
+		]
+	},
+	"ieee1905_refresh_del": {
+		"if" : [
+			{
+				"event": "ieee1905.neighbor.del"
+			}
+		],
+		"then" : [
+			{
+				"object": "bbfdm.ieee1905",
+				"method":"refresh_references_db",
+				"args" : {},
+				"timeout": 1
+			}
+		]
+	}
+}

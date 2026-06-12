@@ -1,0 +1,56 @@
+#!/bin/sh /etc/rc.common
+
+START=97
+STOP=06
+
+USE_PROCD=1
+PROG=/usr/sbin/bbfdmd
+
+. /usr/share/libubox/jshn.sh
+
+log() {
+	echo "${@}"|logger -t bbfdmd.init -p info
+}
+
+validate_bbfdm_bbfdmd_section()
+{
+	uci_validate_section bbfdm bbfdmd "bbfdmd" \
+		'enable:bool:true' \
+		'debug:bool:false' \
+		'loglevel:uinteger:4'
+}
+
+configure_bbfdmd()
+{
+	local enable debug
+	local jlog jrefresh jtimeout jlevel
+
+	config_load bbfdm
+	validate_bbfdm_bbfdmd_section || {
+		log "Validation of bbfdmd section failed"
+		return 1;
+	}
+
+	[ "${enable}" -eq 0 ] && return 0
+
+	procd_set_param command ${PROG}
+	procd_append_param command -l "${loglevel}"
+
+	if [ "${debug}" -eq 1 ]; then
+		procd_set_param stdout 1
+		procd_set_param stderr 1
+	fi
+}
+
+start_service()
+{
+	procd_open_instance "bbfdm"
+	configure_bbfdmd
+	procd_set_param respawn "5" "5" "0"
+	procd_close_instance "bbfdm"
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger "bbfdm"
+}

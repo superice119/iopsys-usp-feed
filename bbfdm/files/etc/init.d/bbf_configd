@@ -1,0 +1,32 @@
+#!/bin/sh /etc/rc.common
+
+START=80
+STOP=07
+
+USE_PROCD=1
+PROG=/usr/sbin/bbf_configd
+
+log() {
+	echo "${@}"|logger -t bbf.config -p info
+}
+
+start_service()
+{
+	local log_level
+
+	config_load bbfdm
+	config_get log_level "reload_handler" log_level 2
+
+	procd_open_instance "bbf_configd"
+	procd_set_param command ${PROG}
+	procd_append_param command -l "${log_level}"
+	procd_set_param respawn "5" "5" "0"
+	procd_close_instance "bbf_configd"
+}
+
+service_triggers() {
+	for config_file in /etc/config/*; do
+		config_name=$(basename "$config_file")
+		procd_add_config_trigger "config.change" "$config_name" /usr/share/bbfdm/scripts/bbf_config_notify.sh "$config_name"
+	done
+}

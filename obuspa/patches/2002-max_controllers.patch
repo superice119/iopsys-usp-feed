@@ -1,0 +1,42 @@
+Index: obuspa-11.0.3/src/core/mqtt.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/mqtt.c
++++ obuspa-11.0.3/src/core/mqtt.c
+@@ -265,6 +265,8 @@ void SaveMqttPublishErrMsg(const char *fmt, ...);
+ #define DEFINE_MQTT_TrustCertVerifyCallbackIndex(index) \
+ int MQTT_TrustCertVerifyCallback_##index (int preverify_ok, X509_STORE_CTX *x509_ctx) \
+ {\
++    if (index >= MAX_MQTT_CLIENTS) \
++	    return 0; \
+     return DEVICE_SECURITY_TrustCertVerifyCallbackWithCertChain(preverify_ok, x509_ctx, &mqtt_clients[index].cert_chain);\
+ }
+ 
+@@ -275,6 +277,11 @@ DEFINE_MQTT_TrustCertVerifyCallbackIndex(1);
+ DEFINE_MQTT_TrustCertVerifyCallbackIndex(2);
+ DEFINE_MQTT_TrustCertVerifyCallbackIndex(3);
+ DEFINE_MQTT_TrustCertVerifyCallbackIndex(4);
++DEFINE_MQTT_TrustCertVerifyCallbackIndex(5);
++DEFINE_MQTT_TrustCertVerifyCallbackIndex(6);
++DEFINE_MQTT_TrustCertVerifyCallbackIndex(7);
++DEFINE_MQTT_TrustCertVerifyCallbackIndex(8);
++DEFINE_MQTT_TrustCertVerifyCallbackIndex(9);
+ // Add more, with incrementing indexes here, if you change MAX_MQTT_CLIENTS
+ 
+ //------------------------------------------------------------------------------------
+@@ -285,10 +292,15 @@ ssl_verify_callback_t* mqtt_verify_callbacks[] = {
+     MQTT_TrustCertVerifyCallbackIndex(2),
+     MQTT_TrustCertVerifyCallbackIndex(3),
+     MQTT_TrustCertVerifyCallbackIndex(4),
++    MQTT_TrustCertVerifyCallbackIndex(5),
++    MQTT_TrustCertVerifyCallbackIndex(6),
++    MQTT_TrustCertVerifyCallbackIndex(7),
++    MQTT_TrustCertVerifyCallbackIndex(8),
++    MQTT_TrustCertVerifyCallbackIndex(9),
+     // Add more, with incrementing indexes here, if you change MAX_MQTT_CLIENTS
+ };
+ 
+-USP_COMPILEASSERT( ((sizeof(mqtt_verify_callbacks)/sizeof(ssl_verify_callback_t*)) == MAX_MQTT_CLIENTS),
++USP_COMPILEASSERT( ((sizeof(mqtt_verify_callbacks)/sizeof(ssl_verify_callback_t*)) >= MAX_MQTT_CLIENTS),
+         "There must be MAX_MQTT_CLIENTS callbacks defined");
+ 
+ /*********************************************************************//**

@@ -1,0 +1,13 @@
+Index: obuspa-11.0.3/src/core/device_bulkdata.c
+===================================================================
+--- obuspa-11.0.3.orig/src/core/device_bulkdata.c
++++ obuspa-11.0.3/src/core/device_bulkdata.c
+@@ -378,6 +378,8 @@ int DEVICE_BULKDATA_Init(void)
+     // Device.BulkData.Profile.{i}.MQTT
+     err |= USP_REGISTER_DBParam_ReadWrite("Device.BulkData.Profile.{i}.MQTT.Reference", "", Validate_BulkDataMqttReference, NULL, DM_STRING);
+     err |= USP_REGISTER_DBParam_ReadWrite("Device.BulkData.Profile.{i}.MQTT.PublishTopic", "", NULL, NULL, DM_STRING);
++    err |= USP_REGISTER_DBParam_ReadWrite("Device.BulkData.Profile.{i}.MQTT.PublishQoS", TO_STR(MQTT_FALLBACK_QOS), NULL, NULL, DM_UINT);
++    err |= USP_REGISTER_DBParam_ReadWrite("Device.BulkData.Profile.{i}.MQTT.PublishRetain", "false", NULL, NULL, DM_BOOL);
+ #endif
+ 
+     // Register Push! Event
