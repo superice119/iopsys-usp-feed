@@ -40,8 +40,9 @@ jobs:
         include:
           - board: mt7621
             arch: mipsel_24kc
-          - board: rk3308
-            arch: aarch64_generic
+          # TEMP narrow-test: rk3308 disabled to get a fast jq-fix signal.
+          # - board: rk3308
+          #   arch: aarch64_generic
     steps:
       - name: Checkout feed
         uses: actions/checkout@v4
@@ -56,7 +57,10 @@ jobs:
           # <package-arch>-<openwrt-version>; selects the openwrt/sdk container
           ARCH: ${{ matrix.arch }}-${{ steps.ver.outputs.version }}
           FEEDNAME: ${{ env.FEEDNAME }}
-          # PACKAGES empty => build the WHOLE feed (validates all packages)
+          # TEMP narrow-test: build only the bbfdm sub-packages to validate the
+          # jqhost fix fast (dm-service is the jq canary). Restore empty (whole
+          # feed) once proven.
+          PACKAGES: bbf_configmngr libbbfdm-api libbbfdm-ubus bbfdmd dm-service
           V: s
           INDEX: '1'
           # Diagnostic mode: a single package failing does NOT abort the whole
