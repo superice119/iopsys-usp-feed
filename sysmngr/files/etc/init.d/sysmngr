@@ -1,0 +1,55 @@
+#!/bin/sh /etc/rc.common
+
+START=15
+STOP=8
+
+USE_PROCD=1
+PROG=/usr/sbin/sysmngr
+
+start_service()
+{
+	local log_level
+
+	if [ ! -f /var/state/dmmap ]; then
+		touch /var/state/dmmap
+		uci -q -c /var/state set dmmap.dmmap='dmmap'
+		uci -q -c /var/state set dmmap.dmmap.cleanup='0'
+		uci -q -c /var/state commit dmmap
+	fi
+
+	config_load sysmngr
+	config_get log_level "globals" log_level 3
+
+	procd_open_instance "sysmngr"
+	procd_set_param command ${PROG}
+	procd_append_param command -l "${log_level}"
+	procd_set_param respawn
+	procd_close_instance "sysmngr"
+}
+
+stop_service() {
+	dmmap_clean=$(uci -q -c /var/state get dmmap.dmmap.cleanup)
+	dmmap_clean="${dmmap_clean:-0}"
+
+	if [ "${dmmap_clean}" -eq 1 ]; then
+		rm -rf /etc/bbfdm/dmmap/*
+		uci -q -c /var/state set dmmap.dmmap.cleanup='0'
+		uci -q -c /var/state commit dmmap
+	fi
+}
+
+reload_service() {
+	ret=$(ubus call service list '{"name":"sysmngr"}' | jsonfilter -qe '@.sysmngr.instances.sysmngr.running')
+	if [ "$ret" != "true" ]; then
+		stop
+		start
+	else
+		ubus send sysmngr.reload
+	fi
+
+	return 0
+}
+
+service_triggers() {
+	procd_add_reload_trigger sysmngr
+}

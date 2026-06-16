@@ -1,0 +1,16 @@
+{
+  "daemon": {
+    "enable": "1",
+    "service_name": "timemngr",
+    "unified_daemon": false,
+    "services": [
+      {
+        "parent_dm": "Device.",
+        "object": "Time"
+      }
+    ],
+    "config": {
+      "loglevel": "3"
+    }
+  }
+}

@@ -1,0 +1,91 @@
+#!/bin/sh
+
+function get_system_ntp_option()
+{
+	local val
+
+	val="$(uci -q get system.ntp.${1})"
+	echo "${val}"
+}
+
+function add_default_config()
+{
+	uci -q set time.client_default="client"
+
+	enabled="$(get_system_ntp_option enabled)"
+	if [ -z "${enabled}" ]; then
+		enabled="1"
+	fi
+
+	uci -q set time.client_default.enable="$enabled"
+	uci -q set time.client_default.dhcp_discovery="1"
+	uci -q set time.client_default.iburst="1"
+	uci -q set time.client_default.version="4"
+	uci -q set time.client_default.peer="0"
+	uci -q set time.client_default.minpoll="6"
+	uci -q set time.client_default.maxpoll="10"
+	uci -q set time.client_default.mode="Unicast"
+
+	interface="$(get_system_ntp_option interface)"
+	if [ -n "${interface}" ]; then
+		uci -q set time.client_default.interface="${interface}"
+	else
+		uci -q set time.client_default.interface="wan"
+	fi
+
+	servers="$(get_system_ntp_option server)"
+	if [ -z "${servers}" ]; then
+		servers="ntp1.sth.netnod.se ntp1.gbg.netnod.se"
+	fi
+
+	for server in $servers; do
+		uci -q add_list time.client_default.server="${server}"
+	done
+}
+
+migrate_timemngr_config() {
+	if [ ! -f "/etc/config/time" ]; then
+		# Time manager UCI is not present
+		touch /etc/config/time
+
+		uci -q set time.global="global"
+		uci -q set time.global.enable="1"
+		uci -q set time.global.dst="1"
+
+		# Do default settings since nothing configured
+		add_default_config
+	else
+		# Time manager UCI is present, check if clients are already configured
+		client_list="$(uci -q show time | grep "=client" | cut -d'=' -f1 | cut -d'.' -f2)"
+		if [ -z "${client_list}" ]; then
+			# Do default settings since nothing configured
+			add_default_config
+		else
+			# migrate dhcp_discovery option
+			for client in $client_list; do
+				discovery="$(uci -q get time.$client.dhcp_discovery)"
+				if [ -n "${discovery}" ]; then
+					continue
+				fi
+
+				if [ "${client}" == "dhcp_driven" ]; then
+					uci -q set time.$client.dhcp_discovery="1"
+				else
+					serv="$(uci -q get time.$client.server)"
+					if [ -z "${serv}" ]; then
+						# No servers for this client configured
+						uci -q set time.$client.dhcp_discovery="1"
+					else
+						# Servers for this client is configured
+						uci -q set time.$client.dhcp_discovery="0"
+					fi
+				fi
+			done
+		fi
+	fi
+
+	uci -q delete system.ntp
+	return 0
+}
+
+migrate_timemngr_config

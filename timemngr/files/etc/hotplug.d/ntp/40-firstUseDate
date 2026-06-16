@@ -1,0 +1,10 @@
+#!/bin/sh
+# This hotplug script set the firstUseDate if not already set
+
+[ "$ACTION" = stratum ] || exit 0
+[ -f "/etc/config/time" ] || exit 0
+
+if ! uci -q get time.global.first_use_date > /dev/null 2>&1; then
+        uci -q set time.global.first_use_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+        uci commit time
+fi

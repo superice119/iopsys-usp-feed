@@ -1,0 +1,5 @@
+config global 'global'
+        option enable '1'
+        option dst '1'
+        option loglevel '2'
+        option supported_zones_file '/etc/timemngr/supported_zones.json'

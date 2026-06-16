@@ -1,0 +1,29 @@
+
+config globals 'globals'
+	option log_level '3'
+
+config reboots 'reboots'
+	option max_reboot_entries '3'
+
+config process_status 'process'
+	option instance_refresh_interval '0'
+	option max_process_entries '50'
+	option sorting_method 'Memory'
+
+config memory_status 'memory'
+	option enable '0'
+	option polling_interval '60'
+	option critical_rise_threshold '80'
+	option critical_fall_threshold '60'
+	option enable_critical_log '0'
+	option file_path '/var/log/critical_memory.log'
+
+config cpu_status 'cpu'
+	option enable '0'
+	option poll_interval '5'
+	option num_samples '30'
+	option critical_rise_threshold '80'
+	option critical_fall_threshold '60'
+	option enable_critical_log '0'
+	option file_path '/var/log/critical_cpu.log'
+

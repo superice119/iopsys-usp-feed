@@ -1,0 +1,289 @@
+#!/bin/sh
+
+. /usr/share/libubox/jshn.sh
+. /lib/upgrade/iopsys.sh
+. /lib/upgrade/platform.sh
+
+. /lib/functions/iopsys-system-layout.sh
+
+. /lib/functions/iopsys-fwbank.sh
+
+# Local cache used to store system layout variables we use in tmpfs.
+# Stored in the $iop_bank_prefix directory.
+fwbank_cache_file="sl_cache"
+fwbank_sl_cache="$iop_bank_prefix/$fwbank_cache_file"
+
+# Wrapper, checking if platform_get_bootbank() exists, and calling it if so.
+fwbank_get_bootbank() {
+	if type platform_get_bootbank >/dev/null 2>/dev/null; then
+		platform_get_bootbank
+	fi
+}
+
+case "$1" in
+	list)
+		json_init
+		json_add_object "dump"
+		json_close_object
+
+		json_add_object "set_bootbank"
+		json_add_int "bank" 32
+		json_close_object
+
+		json_add_object "copy_config"
+		json_add_boolean "keep_settings" 1
+		json_add_boolean "keep_opconf" 1
+		json_add_string "config_scope" "String"
+		json_close_object
+
+		json_add_object "upgrade"
+		json_add_string "path" "String"
+		json_add_boolean "auto_activate" 1
+		json_add_int "bank" 32
+		json_add_boolean "keep_settings" 1
+		json_add_boolean "keep_opconf" 1
+		json_add_string "config_scope" "String"
+		json_add_boolean "reboot" 1
+		json_close_object
+		json_dump
+	;;
+	call)
+		case "$2" in
+			dump)
+				# Get the system layout variables we use, either from
+				# the cache or load them fresh by calling the function.
+				if [ -r "$fwbank_sl_cache" ]; then
+					source "$fwbank_sl_cache"
+				else
+					get_system_layout_info_in_global_var
+
+					# Fill the private cache for our purposes
+					mkdir -p "$iop_bank_prefix"
+					echo "SL_current_bank_id=$SL_current_bank_id" > "$fwbank_sl_cache"
+					echo "SL_current_bank_name=$SL_current_bank_name" >> "$fwbank_sl_cache"
+					echo "SL_other_bank_id=$SL_other_bank_id" >> "$fwbank_sl_cache"
+					echo "SL_other_bank_name=$SL_other_bank_name" >> "$fwbank_sl_cache"
+				fi
+
+				json_init
+				# Sanity check
+				if [ -z "${SL_current_bank_id}" ]; then
+					json_dump
+					exit 0
+				fi
+
+				# Fill in this bank's object
+				# Get this bank's firmware version
+				fwver_current="$(iopsys_get_fwbank_fwver ${SL_current_bank_id})"
+				swver_current="$(iopsys_get_fwbank_swver ${SL_current_bank_id})"
+				omci_swver_current="$(iopsys_get_fwbank_omci_swver ${SL_current_bank_id})"
+
+				fwver_other="$(iopsys_get_fwbank_fwver ${SL_other_bank_id})"
+				swver_other="$(iopsys_get_fwbank_swver ${SL_other_bank_id})"
+				omci_swver_other="$(iopsys_get_fwbank_omci_swver ${SL_other_bank_id})"
+
+				# Fill in info on which bank is going to boot next
+				bootbank="$(fwbank_get_bootbank)"
+				[ "${bootbank}" == "${SL_current_bank_id}" ] && boot_current=1 || boot_current=0
+				[ "${bootbank}" == "${SL_other_bank_id}" ] && boot_other=1 || boot_other=0
+
+				json_add_array "bank"
+
+				for i in $(seq 1 2); do
+					if [ ${i} == ${SL_current_bank_id} ]; then
+						json_add_object ""
+						json_add_string "name" ${SL_current_bank_name}
+						json_add_int "id" ${SL_current_bank_id}
+						json_add_boolean "active" 1
+						json_add_boolean "boot" ${boot_current}
+						json_add_boolean "upgrade" 0
+						json_add_string "fwver" "${fwver_current}"
+						json_add_string "swver" "${swver_current}"
+						json_add_string "omci_swver" "${omci_swver_current}"
+						json_add_string "status" "$(iopsys_get_fwbank_status ${SL_current_bank_id})"
+						json_select ..
+					else
+						json_add_object ""
+						json_add_string "name" $SL_other_bank_name
+						json_add_int "id" $SL_other_bank_id
+						json_add_boolean "active" 0
+						json_add_boolean "boot" ${boot_other}
+						json_add_boolean "upgrade" 1
+						json_add_string "fwver" "${fwver_other}"
+						json_add_string "swver" "${swver_other}"
+						json_add_string "omci_swver" "${omci_swver_other}"
+						json_add_string "status" "$(iopsys_get_fwbank_status ${SL_other_bank_id})"
+						json_select ..
+					fi
+				done
+
+				# End of our two banks, end of array
+				json_close_array
+				json_dump
+			;;
+			set_bootbank)
+				read -r input
+				json_load "$input"
+				json_get_var bank bank
+
+				# Redirect any output that this function might be printing
+				# to stderr, to keep stdout clean. This avoids problems with
+				# the caller of this ubus method, as only valid JSON is expected
+				# on stdout.
+				if type platform_set_bootbank >/dev/null 2>/dev/null; then
+					platform_set_bootbank "$bank" 1>&2
+				fi
+
+				bootbank="$(fwbank_get_bootbank)"
+
+				if [ -z "${bank}" -o -z "${bootbank}" ]; then
+					echo '{"success": false}'
+					exit 0
+				fi
+
+				if [ "${bank}" == "${bootbank}" ]; then
+					echo '{"success": true}'
+				else
+					echo '{"success": false}'
+				fi
+			;;
+			copy_config)
+				read -r input
+				json_load "${input}"
+				json_get_var keep_settings keep_settings
+				json_get_var keep_opconf keep_opconf
+				json_get_var config_scope config_scope
+
+				# Set the default value for keep_settings
+				keep_settings=${keep_settings:-1}
+
+				if command -v "opconf_conf_handler" >/dev/null 2>&1; then
+					if ! mountpoint -q /usr_data; then
+						logger -t sysmngr.fwbank "copy_config: usr_data partition not present"
+						config_scope="All"
+					fi
+
+					arg="-k ${keep_settings}"
+					[ -n  "${keep_opconf}" ] && arg="${arg} -o ${keep_opconf}"
+					[ -n  "${config_scope}" ] && arg="${arg} -s ${config_scope}"
+
+					opconf_conf_handler ${arg}
+				else
+					# Fallback to default old behaviour in case opconf not present
+					config_scope="All"
+				fi
+
+				ret=0
+				if [ "${keep_settings}" -eq "1" ] && [ "${config_scope}" = "All" ]; then
+					if [ -z "$UPGRADE_BACKUP" ]; then
+						UPGRADE_BACKUP=/tmp/sysupgrade.tgz
+					fi
+
+					sysupgrade -b "$UPGRADE_BACKUP" || ret=1
+					if [ "$ret" -eq 0 ]; then
+						if command -v platform_copy_config >/dev/null 2>&1; then
+							platform_copy_config 1>&2 || ret=1
+						else
+							ret=1
+						fi
+					fi
+				fi
+
+				if [ "$ret" -eq 0 ]; then
+					echo '{"success": true}'
+				else
+					echo '{"success": false}'
+				fi
+			;;
+			upgrade)
+				# Read the JSON object provided for the arguments
+				read -r input
+
+				json_load "${input}"
+
+				json_get_var path path
+				json_get_var auto_activate auto_activate
+				json_get_var bank bank
+				json_get_var keep_settings keep_settings
+				json_get_var keep_opconf keep_opconf
+				json_get_var config_scope config_scope
+				json_get_var reboot reboot
+
+				ret=0
+
+				# Do we have all the arguments we want?
+				[ -z "${path}" ] || [ -z "${auto_activate}" ] || [ -z "${bank}" ] && ret=1
+				# Sanity: is the given bankid really the one to be upgraded?
+				[ "${bank}" -eq "$(iopsys_get_next_bank_id)" ] || ret=1
+
+				# Does the given file actually exist?
+				[ -r "${path}" ] || ret=1
+
+				# Is the auto_activate provided in the JSON a boolean?
+				# (meaning: here we should get 0 or 1 instead of any other string)
+				[ "${auto_activate}" == "0" -o "${auto_activate}" == "1" ] || ret=1
+
+				# Fail if any of the above sanity checks fail.
+				[ ${ret} -eq 1 ] && {
+					echo "{ \"result\": \"failure\" }"
+					exit 0
+				}
+
+				# Set the default value for keep_settings
+				keep_settings=${keep_settings:-1}
+				reboot=${reboot:-0}
+
+				# This ubus call does not reboot the system at any one time.
+				# Although, the newly upgraded bank is activated by default.
+				# Thus, pass "--no-reboot" if the bank is to be activated,
+				# "--no-activate" otherwise.
+				sysupgrade_flag=""
+				if [ "${auto_activate}" -eq 1 ]; then
+					if [ "${reboot}" -eq 0 ]; then
+						sysupgrade_flag="--no-reboot"
+					fi
+				else
+					sysupgrade_flag="--no-activate"
+				fi
+
+				if command -v "opconf_conf_handler" >/dev/null 2>&1; then
+					if ! mountpoint -q /usr_data; then
+						logger -t sysmngr.fwbank "upgrade: usr_data partition not present"
+						config_scope="All"
+					fi
+
+					arg="-k ${keep_settings}"
+					[ -n  "${keep_opconf}" ] && arg="${arg} -o ${keep_opconf}"
+					[ -n  "${config_scope}" ] && arg="${arg} -s ${config_scope}"
+
+					opconf_conf_handler ${arg}
+				else
+					# Fallback to default old behaviour in case opconf not present
+					config_scope="All"
+				fi
+
+				# Set the flag to do not save configuration over reflash
+				if [ "${keep_settings}" -eq 0 ]; then
+					sysupgrade_flag="${sysupgrade_flag} -n"
+				elif [ "${keep_settings}" -eq 1 ]; then
+					if [ -n "${config_scope}" ] && [ "${config_scope}" != "All" ]; then
+						sysupgrade_flag="${sysupgrade_flag} -n"
+					fi
+				fi
+
+				# Call sysupgrade synchonously. It should not time out the ubus call,
+				# as it will just verify the image and do an ubus call, leading to
+				# do_stage2 doing the actual upgrade.
+				sysupgrade_result=""
+				sysupgrade $sysupgrade_flag "$path" > /dev/null 2>&1
+				if [ $? -eq 0 ]; then
+					sysupgrade_result="ok"
+				else
+					sysupgrade_result="failure"
+				fi
+
+				echo "{ \"result\": \"$sysupgrade_result\" }"
+			;;
+		esac
+	;;
+esac

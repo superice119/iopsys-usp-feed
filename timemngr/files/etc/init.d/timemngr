@@ -1,0 +1,106 @@
+#!/bin/sh /etc/rc.common
+
+START=20
+STOP=01
+
+. /etc/timemngr/time.sh
+. /etc/timemngr/generate_supported_zones.sh
+
+USE_PROCD=1
+PROG_UBUS=/usr/sbin/timemngr
+
+DEFAULT_SUPPORTED_ZONES_PATH="/etc/timemngr/supported_zones.json"
+
+log() {
+	echo "${@}"|logger -t timemngr.init -p info
+}
+
+validate_global_section() {
+	uci_validate_section time global global \
+	    'enable:bool:1' \
+	    'loglevel:uinteger:3' \
+	    'mdns:bool:1'
+}
+
+boot() {
+	config_load time
+	config_get_bool dst_enable global dst 1
+
+	if [ "${dst_enable}" -eq 1 ]; then
+		if ! grep -qF "#timemngr-dst" /etc/crontabs/root; then
+			echo "0 0 * * *   service system restart #timemngr-dst" >> /etc/crontabs/root
+		fi
+	else
+		sed -i '/#timemngr-dst/d' /etc/crontabs/root
+	fi
+	
+	config_get file_path global supported_zones_file
+	
+	# If option is not configured, use the default path
+	if [ -z "${file_path}" ]; then
+		file_path="${DEFAULT_SUPPORTED_ZONES_PATH}"
+		uci -q set time.global.supported_time_zone_file="${DEFAULT_SUPPORTED_ZONES_PATH}"
+		uci -q commit time
+	fi
+
+	# If the JSON file doesn't exist, generate it
+	if [ ! -f "${file_path}" ]; then
+		generate_supported_zones > "${file_path}"
+	fi
+
+	start
+}
+
+start_service() {
+	local enable loglevel server_enable mdns
+
+	if uci -q get system.ntp >/dev/null 2>&1; then
+		log "Not starting timemngr, legacy ntp definition detected"
+		return 1
+	fi
+
+	config_load time
+
+	validate_global_section
+
+	# Start timemngr_dm instance
+	procd_open_instance timemngr_dm
+	procd_set_param command $PROG_UBUS
+	procd_append_param command -l ${loglevel}
+	procd_set_param respawn
+	procd_close_instance
+
+	config_get_bool server_enable server enable 0
+
+	if [ "${server_enable}" -eq 1 ]; then
+		[ "${mdns}" -ne 0 ] && procd_add_mdns "ntp" "udp" "123" "daemon=ntpd"
+	fi
+
+	# Generate Config & Start timemngr instance
+	if [ "${enable}" -eq 1 ]; then
+		generate_config
+		create_service
+	fi
+}
+
+reload_service() {
+	log "Reloading timemngr instance"
+	stop "timemngr"
+	start
+}
+
+service_triggers() {
+	procd_add_reload_trigger "time"
+
+	local enable mode ttl interface
+	validate_server_section || {
+		return 1
+	}
+
+	if [ "$enable" != 0 ] && [ "$mode" = "Broadcast" ] && [ -n "$interface" ]; then
+		log "Service trigger for interface up event"
+		procd_open_trigger
+		procd_add_interface_trigger "interface.*.up" $interface /etc/init.d/timemngr reload
+		procd_close_trigger
+	fi
+}

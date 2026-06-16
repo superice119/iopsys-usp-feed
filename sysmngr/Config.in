@@ -1,0 +1,48 @@
+if PACKAGE_sysmngr
+
+config SYSMNGR_VENDOR_CONFIG_FILE
+	bool "Enable Device.DeviceInfo.VendorConfigFile. Object"
+	default y
+	
+config SYSMNGR_MEMORY_STATUS
+	bool "Enable Device.DeviceInfo.MemoryStatus. Object"
+	default y
+	
+config SYSMNGR_PROCESS_STATUS
+	bool "Enable Device.DeviceInfo.ProcessStatus. Object"
+	default y
+	
+config SYSMNGR_SUPPORTED_DATA_MODEL
+	bool "Enable Device.DeviceInfo.SupportedDataModel. Object"
+	default y
+	
+config SYSMNGR_FIRMWARE_IMAGE
+	bool "Enable Device.DeviceInfo.FirmwareImage. Object"
+	default y
+
+config SYSMNGR_REBOOTS
+	bool "Enable Device.DeviceInfo.Reboots. Object"
+	default y
+
+config SYSMNGR_NETWORK_PROPERTIES
+	bool "Enable Device.DeviceInfo.NetworkProperties. Object"
+	default y
+
+config SYSMNGR_VENDOR_EXTENSIONS
+	bool "Enable vendor extensions for Device.DeviceInfo."
+	default y
+
+config SYSMNGR_VENDOR_PREFIX
+	depends on SYSMNGR_VENDOR_EXTENSIONS
+	string "Vendor Prefix for sysmngr datamodel extensions"
+	default ""
+
+config SYSMNGR_FWBANK_UBUS_SUPPORT
+	bool "Expose fwbank ubus object"
+	default y
+
+config SYSMNGR_TEMPERATURE_STATUS
+	bool "Enable Device.DeviceInfo.TemperatureStatus. Object"
+	default y
+
+endif

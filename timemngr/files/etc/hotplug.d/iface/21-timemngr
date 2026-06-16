@@ -1,0 +1,56 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /usr/share/libubox/jshn.sh
+
+log() {
+	echo "${@}"|logger -t time.iface -p info
+}
+
+configure_ntp_servers()
+{
+	uci_changed=0
+	servers=""
+
+	json_load "$(ifstatus ${1})"
+	json_select data
+	json_get_var servers ntpserver ""
+
+	if [ -z "${servers}" ]; then
+		return
+	fi
+
+	# Find the dhcp discovery enabled section
+	config_load time
+
+	client_sec="$(uci -q show time | grep "=client" | cut -d'=' -f 1 | cut -d'.' -f2)"
+	for client in $client_sec; do
+		config_get_bool enable $client enable "1"
+		config_get_bool discovery $client dhcp_discovery "1"
+		config_get intf $client interface ""
+
+		if [ "${intf}" == "${1}" ] && [ "${discovery}" -eq 1 ]; then
+			config_get cur_servers $client server ""
+			if [ "${servers}" != "${cur_servers}" ]; then
+				uci -q del time.$client.server
+				for server in ${servers}; do
+					uci -q add_list time.$client.server="${server}"
+				done
+
+				if [ "${enable}" -eq 1 ]; then
+					uci_changed=1
+				fi
+			fi
+		fi
+	done
+
+	if [ "${uci_changed}" -eq 1 ]; then
+		log "Restarting timemngr"
+		ubus call uci commit '{"config":"time"}'
+	fi
+}
+
+[ "$ACTION" = "ifup" -a "$(uci -q get network.$INTERFACE.is_lan)" != "1" ] && {
+	configure_ntp_servers ${INTERFACE}
+}
+

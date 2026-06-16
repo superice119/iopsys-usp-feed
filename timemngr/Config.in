@@ -1,0 +1,39 @@
+if PACKAGE_timemngr
+choice
+	prompt "Select backend of time management"
+	default TIMEMNGR_NTPD
+	depends on PACKAGE_timemngr
+	help
+		Select which backend daemon to use for time management
+
+config TIMEMNGR_NTPD
+	bool "Use NTPD for time management"
+
+endchoice
+
+config TIMEMNGR_LEGACY_DM
+	bool "Use LEGACY Device.Time. implementation from TR181-2.15"
+	depends on PACKAGE_timemngr
+	default n
+	help
+	   TR181-2.16 changed the schema of Device.Time. object, select
+	   this option to use old schema datamodel.
+
+config TIMEMNGR_MIGRATE_SYSTEM
+	bool "Migrate time definition from system uci"
+	depends on PACKAGE_timemngr
+	default y
+	help
+	   Timemngr can be configured with time uci file, or by a migration
+	   script to migrate ntp uci definition from system uci to time uci.
+	   Enable this option to install the ntp migration script.
+
+config TIMEMNGR_VENDOR_EXTENSIONS
+	bool "Iopsys vendor extensions for Device.Time."
+	depends on PACKAGE_timemngr
+	default y
+
+config TIMEMNGR_VENDOR_PREFIX
+	string "Package specific datamodel Vendor Prefix for TR181 extensions"
+	default ""
+endif
