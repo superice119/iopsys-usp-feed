@@ -1,0 +1,11 @@
+#!/bin/sh
+# timemngr manages ntpd itself (it refuses to start while system.ntp exists and
+# its migration moves that config into /etc/config/time). On generic OpenWrt the
+# base time-sync service (sysntpd) is still enabled and holds UDP/123, so
+# timemngr's own ntpd cannot bind and procd crash-loops it. Hand ntp ownership
+# to timemngr by stopping/disabling the base service.
+if [ -x /etc/init.d/sysntpd ]; then
+	/etc/init.d/sysntpd stop 2>/dev/null
+	/etc/init.d/sysntpd disable 2>/dev/null
+fi
+exit 0

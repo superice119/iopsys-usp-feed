@@ -39,7 +39,11 @@ config SYSMNGR_VENDOR_PREFIX
 
 config SYSMNGR_FWBANK_UBUS_SUPPORT
 	bool "Expose fwbank ubus object"
-	default y
+	# Deviation from upstream (default y): the fwbank helper reads iopsys A/B
+	# dual-image bank state via /lib/functions/iopsys-fwbank.sh, which does not
+	# exist on single-image OpenWrt -> sysmngr spins 10 retries then gives up.
+	# Default off here; flip on only for iopsys-style dual-bank platforms.
+	default n
 
 config SYSMNGR_TEMPERATURE_STATUS
 	bool "Enable Device.DeviceInfo.TemperatureStatus. Object"

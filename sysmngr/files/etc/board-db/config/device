@@ -1,0 +1,16 @@
+# Device identity for Device.DeviceInfo.* (read by sysmngr via
+# libbbfdm-api db_get_value_string -> UCI confdir /etc/board-db/config).
+#
+# iopsys hardware ships this from its board "db" backend; on a generic OpenWrt
+# build it does not exist, so DeviceInfo.SerialNumber/SoftwareVersion/... read
+# back empty. EDIT the values below to match the real device before onboarding.
+# ManufacturerOUI must be 6 hex digits and should match the agent EndpointID
+# (os::<OUI>-<serial>).
+config deviceinfo 'deviceinfo'
+	option Manufacturer 'OpenWrt'
+	option ManufacturerOUI '00256D'
+	option ProductClass 'Gateway'
+	option SerialNumber 'Gateway0001'
+	option ModelName 'GenericGateway'
+	option HardwareVersion 'v1.0'
+	option SoftwareVersion 'OpenWrt-24.10'

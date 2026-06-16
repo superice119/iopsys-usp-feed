@@ -85,6 +85,9 @@ else
 ifeq ($(CONFIG_TIMEMNGR_MIGRATE_SYSTEM),y)
 	$(INSTALL_BIN) ./files/etc/uci-defaults/96-system-ntp-migrate $(1)/etc/uci-defaults/
 endif
+	# Hand ntp ownership to timemngr: disable base sysntpd so the two ntpd
+	# instances don't fight over UDP/123 (see the script for details).
+	$(INSTALL_BIN) ./files/etc/uci-defaults/97-disable-sysntpd-for-timemngr $(1)/etc/uci-defaults/
 	$(INSTALL_BIN) ./files/etc/hotplug.d/iface/21-timemngr $(1)/etc/hotplug.d/iface/
 	$(INSTALL_BIN) ./files/etc/hotplug.d/ntp/40-firstUseDate $(1)/etc/hotplug.d/ntp/
 	$(INSTALL_BIN) ./files/etc/init.d/timemngr $(1)/etc/init.d/

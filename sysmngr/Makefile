@@ -115,6 +115,12 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/etc/config/sysmngr $(1)/etc/config/sysmngr
 
+	# DeviceInfo identity backend (UCI confdir /etc/board-db/config). iopsys HW
+	# ships this from its board db; generic OpenWrt needs it or DeviceInfo.* read
+	# back empty. INSTALL_CONF so user edits survive upgrades.
+	$(INSTALL_DIR) $(1)/etc/board-db/config
+	$(INSTALL_CONF) ./files/etc/board-db/config/device $(1)/etc/board-db/config/device
+
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/sysmngr $(1)/usr/sbin/sysmngr
 

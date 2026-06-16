@@ -11,3 +11,29 @@ config obuspa 'global'
 	option log_dest 'syslog'
 	option dm_caching_exclude '/etc/obuspa/transient_dm.json'
 	option dualstack_pref 'IPv6'
+
+# --- USP Controller (Oktopus) onboarding example -------------------------------
+# Uncomment and edit to connect to a controller over WebSocket. Two fields are
+# easy to get wrong on a non-iopsys platform (both cost connection time):
+#   * EndpointID MUST equal the controller's own endpoint id (what Oktopus
+#     reports, e.g. 'oktopusController'); a mismatch makes obuspa drop every
+#     USP record with "inconsistent endpoint".
+#   * assigned_role_name='full_access' is REQUIRED for ws:// (no TLS client
+#     cert -> the controller otherwise falls back to the Untrusted role and
+#     cannot read the data model / discovery hangs).
+#config controller 'oktopus'
+#	option Enable '1'
+#	option Protocol 'WebSocket'
+#	option EndpointID 'oktopusController'
+#	option assigned_role_name 'full_access'
+#	option Host '192.0.2.1'
+#	option Port '8080'
+#	option Path '/ws/agent'
+#	option EnableEncryption '0'
+
+# --- Agent identity -----------------------------------------------------------
+# Give the agent a stable, unique EndpointID (else it is auto-derived from
+# Device.DeviceInfo OUI/serial, which is empty until /etc/board-db/config/device
+# is populated -- see the sysmngr package).
+#config localagent 'agent'
+#	option EndpointID 'os::00256D-Gateway001'
